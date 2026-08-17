@@ -11,3 +11,6 @@
 - [x] Verify the managed database documentation and prepare the final persistence checkpoint.
 - [x] Re-run type and workflow tests after role enforcement, then verify the final documentation before checkpointing.
 - [x] Verify final managed-database documentation and add a focused administrator-access test before checkpointing.
+- [x] Remove infrastructure and persistence terminology from all visible OrderFlow interface copy.
+- [x] Replace technical status panels and headings with business-oriented operations language.
+- [x] Validate the revised interface and preserve existing user workflows.
