@@ -23,13 +23,18 @@
 - [x] Rewrite the README to accurately describe only the final implementation and validation status.
 - [x] Add and verify a persisted MVC order edit workflow for editable order details and line items.
 - [x] Document the verified C# build result and Windows IIS/IIS Express runtime requirement without claiming a successful Linux-hosted runtime test.
-- [ ] Save the final MVC-primary repository checkpoint after the verified build and reservation checks.
+- [x] Save the final MVC-primary repository checkpoint after the verified build and reservation checks.
 - [x] Confirm the README describes only ASP.NET MVC 5/.NET Framework 4.8 and Windows IIS/IIS Express runtime requirements.
 - [x] Complete final C# build and repository-structure verification without further Linux/Mono hosting attempts.
-- [ ] Save the final corrected MVC repository checkpoint and deliver the build summary.
+- [x] Save the final corrected MVC repository checkpoint and deliver the build summary.
 - [x] Expand the MVC order-edit view with add and remove controls for order lines.
 - [x] Add focused verification for order edit persistence and inventory reservation reconciliation.
 - [x] Do not retain the unsupported in-memory EF6 persistence verification; preserve the successful MVC build and reservation verifier as directed.
 - [x] Remove the unsupported supplemental in-memory EF6 persistence verification dependency and return to the lightweight C# reservation verifier.
 - [x] Run the final MVC build, reservation verification, MVC asset inventory, active TypeScript source check, and README stack check.
 - [x] Verify removal of all Effort/NMemory in-memory test code and package wiring, then re-run the lightweight C# reservation verifier.
+- [x] Inspect the stopped development-server configuration and deployment build failure.
+- [x] Restore a compatible development-server entry point while keeping ASP.NET MVC 5 as the primary source implementation.
+- [x] Restart and verify the development service, then document the supported runtime boundary.
+- [ ] Save the development-server recovery checkpoint.
+- [x] Add a compatible JavaScript syntax-check script for the lightweight development preview.

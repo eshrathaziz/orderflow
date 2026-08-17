@@ -106,6 +106,10 @@ mono OrderFlow.Verification/bin/Debug/OrderFlow.Verification.exe
 
 The project compiles to `OrderFlow.MVC/bin/OrderFlow.MVC.dll`. `OrderFlow.Verification` validates the order-edit reservation reconciliation rules for increasing, reducing, and rejecting invalid stock allocations. Windows Visual Studio/IIS Express remains the supported hosting environment for the classic .NET Framework MVC runtime.
 
+## Managed Development Preview
+
+The repository includes a lightweight, dependency-free JavaScript development-preview shell so the managed project workspace can remain available while the primary classic MVC application is run through Windows IIS or IIS Express. It does not replace, build, or execute the ASP.NET MVC application. The primary implementation remains `OrderFlow.MVC/`; use Visual Studio and IIS Express for MVC route, Razor, authentication, and SQL Server runtime testing.
+
 ## AJAX Endpoints
 
 | Endpoint | Behaviour |

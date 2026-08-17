@@ -1,0 +1,12 @@
+{
+  "name": "orderflow-development-preview",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "start": "node dev-server.js",
+    "build": "node -e \"console.log('OrderFlow development preview ready')\"",
+    "check": "node --check dev-server.js"
+  }
+}
