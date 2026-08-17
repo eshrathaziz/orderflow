@@ -1,0 +1,30 @@
+erDiagram
+    ROLES ||--o{ USERS : assigns
+    CUSTOMERS ||--o| USERS : "may own portal user"
+    CUSTOMERS ||--o{ ORDERS : places
+    USERS ||--o{ ORDERS : manages
+    CATEGORIES ||--o{ PRODUCTS : groups
+    PRODUCTS ||--|| INVENTORY : "has balance"
+    PRODUCTS ||--o{ INVENTORY_TRANSACTIONS : records
+    ORDERS ||--o{ ORDER_ITEMS : contains
+    PRODUCTS ||--o{ ORDER_ITEMS : snapshots
+    ORDERS ||--o{ INVENTORY_TRANSACTIONS : "fulfils against"
+    CUSTOMERS ||--o{ CUSTOMER_REQUESTS : submits
+    ORDERS ||--o{ CUSTOMER_REQUESTS : concerns
+    USERS ||--o{ CUSTOMER_REQUESTS : owns
+    CUSTOMER_REQUESTS ||--o{ REQUEST_HISTORY : logs
+    USERS ||--o{ REQUEST_HISTORY : authors
+    USERS ||--o{ AUDIT_EVENTS : creates
+
+    ROLES { int RoleId PK string Name UK string Description }
+    USERS { int UserId PK string Email UK string DisplayName string PasswordHash string PasswordSalt int RoleId FK int CustomerId FK bool IsActive datetime LastLoginUtc }
+    CUSTOMERS { int CustomerId PK string CompanyName string ContactName string Email int Status datetime CreatedAtUtc }
+    CATEGORIES { int CategoryId PK string Name UK string Description bool IsActive }
+    PRODUCTS { int ProductId PK int CategoryId FK string Sku UK string Name decimal UnitPrice int ReorderLevel int Status }
+    INVENTORY { int InventoryId PK int ProductId FK int QuantityOnHand int ReservedQuantity rowversion RowVersion }
+    INVENTORY_TRANSACTIONS { int InventoryTransactionId PK int ProductId FK int OrderId FK int PerformedByUserId FK int Type int QuantityDelta int QuantityBefore int QuantityAfter datetime CreatedAtUtc }
+    ORDERS { int OrderId PK string OrderNumber UK int CustomerId FK int SalesExecutiveUserId FK int Status decimal Subtotal decimal TaxRate decimal TaxAmount decimal TotalAmount datetime CreatedAtUtc }
+    ORDER_ITEMS { int OrderItemId PK int OrderId FK int ProductId FK int Quantity decimal UnitPrice decimal LineSubtotal decimal TaxAmount decimal LineTotal }
+    CUSTOMER_REQUESTS { int CustomerRequestId PK string RequestNumber UK int CustomerId FK int OrderId FK int AssignedEmployeeUserId FK int Type int Priority int Status string Description string Resolution }
+    REQUEST_HISTORY { int RequestHistoryId PK int CustomerRequestId FK int AuthorUserId FK int PreviousStatus int NewStatus string Message bool IsVisibleToCustomer datetime CreatedAtUtc }
+    AUDIT_EVENTS { long AuditEventId PK int UserId FK string EntityType string EntityId int Action string Detail datetime CreatedAtUtc }

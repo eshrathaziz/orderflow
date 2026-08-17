@@ -1,0 +1,26 @@
+flowchart LR
+    User["Administrator · Sales Executive · Inventory Manager · Customer"] --> Browser["Browser / Bootstrap + jQuery UI"]
+    Browser --> MVC["ASP.NET MVC 5\nControllers · Model Binding · Validation"]
+    MVC --> Auth["Forms Authentication\nCustom Principal + Role Authorization"]
+    MVC --> Services["Domain Services\nOrder · Inventory · Dashboard · Audit"]
+    MVC --> EF["Entity Framework 6\nDbContext · LINQ · Entities"]
+    EF --> SQL[("SQL Server\nNormalized relational schema")]
+    Services --> Audit[("AuditEvents")]
+    Browser -. "AJAX: search, availability, totals, status" .-> MVC
+    MVC --> Views["Razor Views\nResponsive Operations Ledger UI"]
+    Views --> Browser
+
+    subgraph Presentation [Presentation Layer]
+      Browser
+      Views
+    end
+    subgraph Application [Application Layer]
+      MVC
+      Auth
+      Services
+    end
+    subgraph Data [Data Layer]
+      EF
+      SQL
+      Audit
+    end
