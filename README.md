@@ -15,7 +15,23 @@ OrderFlow is a **GitHub-ready enterprise-style Order and Inventory Management Sy
 | `docs/Architecture-Diagram.mmd` | Source for the logical architecture diagram. |
 | `docs/INTERVIEW_GUIDE.md` | Interview narrative, design reasoning, demonstration script, and common follow-ups. |
 | `docs/TEST_PLAN.md` | Validation record and targeted manual test plan. |
-| `client/` | Interactive responsive operations-dashboard demonstration used for visual review and screenshots. |
+| `client/` | Responsive OrderFlow client connected to the managed tRPC persistence layer. |
+| `drizzle/schema.ts` | Managed MySQL/TiDB persistent schema for the current deployed application. |
+| `drizzle/0000_sour_bastion.sql` | Generated managed-database migration, reviewed and applied to the project database. |
+| `server/db.ts` and `server/routers.ts` | Tenant-scoped persistence helpers and authenticated tRPC contracts. |
+
+## Managed Database Persistence
+
+The current web application now has a **managed persistent MySQL/TiDB database** in addition to the legacy MVC/SQL Server reference project. After signing in, each account receives a private OrderFlow workspace keyed to the authenticated user. Its starter categories, customers, products, balances, and opening inventory movements are created only once. Subsequent orders, reservations, inventory adjustments, workflow advances, and customer requests are read from and written to the managed database.
+
+| Persistent record | Protection and behaviour |
+| --- | --- |
+| Customers, categories and products | Each record is scoped by `ownerId`, preventing one signed-in workspace from reading another workspace’s data. |
+| Inventory and inventory transactions | The current balance is stored separately from the immutable movement history; adjustments cannot reduce stock below existing reservations. |
+| Orders and items | Order items retain product, SKU and price snapshots. New saved orders reserve stock; the Shipped transition commits stock-out movements. |
+| Customer requests and history | Each request is linked to a customer and optional order, and begins with a stored customer-visible history entry. |
+
+The migration created nine OrderFlow tables (`categories`, `customers`, `products`, `inventory`, `inventoryTransactions`, `orders`, `orderItems`, `customerRequests`, and `requestHistory`) with foreign keys, unique identifiers, and lookup indexes. All workspace reads and ordinary order/request creation require an authenticated account. Inventory adjustments and order workflow advancement use an explicit administrator gate before database code can run. Use `pnpm drizzle-kit generate` after future schema edits, review the resulting migration, and apply it through the managed database migration workflow before deploying.
 
 ## Core Modules
 
@@ -87,15 +103,15 @@ Install **Visual Studio 2022** with the **ASP.NET and web development** workload
 
 **Security note:** the sample accounts and non-HTTPS LocalDB development configuration are strictly for local demonstration. Set `requireSSL="true"`, use an HTTPS binding, rotate all sample passwords, and move secret-bearing settings out of source control before any deployment.
 
-## Interactive Demonstration
+## Interactive Application
 
-The managed preview provides a responsive, client-side demonstration of the Operations Ledger interface, including dashboard metrics, search/filter views, inventory adjustment simulation, request queue, responsive navigation, and an order-entry drawer with real-time availability and tax totals. It uses illustrative operational records to make the UI explorable; the server-authoritative implementation is in `OrderFlow.MVC/`.
+The managed preview provides the responsive Operations Ledger interface with a sign-in-backed persistent workspace. After sign-in, it loads database records through tRPC, saves new order reservations, persists inventory adjustments and workflow transitions, and stores customer requests. The legacy ASP.NET MVC implementation remains in `OrderFlow.MVC/` as the requested .NET Framework reference implementation.
 
 The dashboard was visually reviewed at desktop size and refined to use a persistent ink-blue navigation rail, structured ledger density, a distinct flow-channel brand mark, semantic workflow colors, and a dispatch-monitor treatment for warehouse imagery. The architecture diagram and the documented screenshot validation path are included in this repository; use the application preview for the current visual capture.
 
 ## Database Notes
 
-The core tables required for the system are present: `Users`, `Roles`, `Customers`, `Products`, `Categories`, `Inventory`, `InventoryTransactions`, `Orders`, `OrderItems`, `CustomerRequests`, and `RequestHistory`. `AuditEvents` is included as a practical extension for traceability. The SQL script defines unique natural business identifiers such as email, SKU, order number, and request number, plus indexes tuned for customer/order lookup, product history, customer request triage, and audit retrieval.
+The legacy SQL Server schema remains in `database/OrderFlow.Database.sql`. The deployed managed application uses the Drizzle schema described above. Both designs use normalized order, item, inventory, and request-history structures; do not attempt to point the managed web runtime directly at the legacy LocalDB configuration.
 
 ## AJAX Endpoints
 
@@ -122,4 +138,3 @@ The `.gitignore` excludes Visual Studio user files, build output, `packages/`, l
 [1]: https://learn.microsoft.com/en-us/dotnet/api/system.web.mvc.authorizeattribute "Microsoft Learn — AuthorizeAttribute"
 [2]: https://learn.microsoft.com/en-us/ef/ef6/modeling/code-first/workflows/new-database "Microsoft Learn — EF6 Code First: New Database"
 [3]: https://learn.microsoft.com/en-us/dotnet/api/system.web.security.formsauthentication "Microsoft Learn — FormsAuthentication"
-
