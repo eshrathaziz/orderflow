@@ -40,4 +40,5 @@
 - [x] Add a compatible JavaScript syntax-check script for the lightweight development preview.
 - [x] Add a build step that creates the required dist/public deployment artifact from the lightweight preview.
 - [x] Validate the generated deployment artifact and retained development-server response.
-- [ ] Save the deployment build fix checkpoint and confirm production build readiness.
+- [x] Save the deployment build fix checkpoint and confirm production build readiness.
+- [ ] Confirm the managed deployment succeeds after the dist/public artifact fix, then save the verified deployment checkpoint.
