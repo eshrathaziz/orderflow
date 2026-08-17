@@ -36,5 +36,8 @@
 - [x] Inspect the stopped development-server configuration and deployment build failure.
 - [x] Restore a compatible development-server entry point while keeping ASP.NET MVC 5 as the primary source implementation.
 - [x] Restart and verify the development service, then document the supported runtime boundary.
-- [ ] Save the development-server recovery checkpoint.
+- [x] Save the development-server recovery checkpoint.
 - [x] Add a compatible JavaScript syntax-check script for the lightweight development preview.
+- [x] Add a build step that creates the required dist/public deployment artifact from the lightweight preview.
+- [x] Validate the generated deployment artifact and retained development-server response.
+- [ ] Save the deployment build fix checkpoint and confirm production build readiness.

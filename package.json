@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node dev-server.js",
     "start": "node dev-server.js",
-    "build": "node -e \"console.log('OrderFlow development preview ready')\"",
+    "build": "node build-preview.js",
     "check": "node --check dev-server.js"
   }
 }
