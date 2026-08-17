@@ -41,4 +41,8 @@
 - [x] Add a build step that creates the required dist/public deployment artifact from the lightweight preview.
 - [x] Validate the generated deployment artifact and retained development-server response.
 - [x] Save the deployment build fix checkpoint and confirm production build readiness.
-- [ ] Confirm the managed deployment succeeds after the dist/public artifact fix, then save the verified deployment checkpoint.
+- [x] Confirm the managed deployment succeeds after the dist/public artifact fix, then save the verified deployment checkpoint.
+- [ ] Capture post-deployment production evidence after the artifact fix before reporting success.
+- [x] Extend the preview build to emit dist/index.js as the managed production startup entry point.
+- [x] Validate that the generated production server starts on the injected port and serves dist/public assets.
+- [ ] Save and confirm the deployment fix after the managed startup probe succeeds.
