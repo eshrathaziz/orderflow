@@ -1,0 +1,25 @@
+@using OrderFlow.MVC.Models
+@model OrderFlow.MVC.ViewModels.OrderEditViewModel
+@{ ViewBag.Title = "Edit order"; var customers = ViewBag.Customers as IEnumerable<Customer>; var products = ViewBag.Products as IEnumerable<Product>; }
+<div class="of-mvc-head"><div><div class="of-mvc-kicker">Order management</div><h1 class="of-mvc-title">Edit order</h1><p class="of-mvc-subtitle">Update customer, order lines, delivery instructions, and tax before the order enters fulfilment.</p></div><a class="of-mvc-btn ghost" href="@Url.Action("Details", new { id = Model.OrderId })">Back to order</a></div>
+@using(Html.BeginForm("Edit","Orders",FormMethod.Post,new{@class="of-mvc-form of-mvc-card p-4"})){
+    @Html.AntiForgeryToken() @Html.HiddenFor(m => m.OrderId) @Html.ValidationSummary(true,"",new{@class="text-danger small"})
+    <div class="mb-3"><label>Customer</label><select class="form-select" name="CustomerId" required>@foreach(var customer in customers){<option value="@customer.CustomerId" @(customer.CustomerId == Model.CustomerId ? "selected" : "")>@customer.CompanyName · @customer.ContactName</option>}</select></div>
+    <div class="d-flex justify-content-between align-items-center mb-2"><label class="mb-0">Order lines</label><button id="of-add-order-line" type="button" class="of-mvc-btn ghost">Add product</button></div>
+    <div id="of-order-lines">
+    @for(var i = 0; i < Model.Items.Count; i++){
+        <div class="row g-2 mb-3 of-order-line" data-order-line><div class="col-md-7"><select class="form-select" name="Items[@i].ProductId" required>@foreach(var product in products){<option value="@product.ProductId" @(product.ProductId == Model.Items[i].ProductId ? "selected" : "")>@product.Sku · @product.Name</option>}</select></div><div class="col-md-3"><input class="form-control" type="number" min="1" name="Items[@i].Quantity" value="@Model.Items[i].Quantity" required/></div><div class="col-md-2 d-grid"><button type="button" class="of-mvc-btn ghost of-remove-order-line">Remove</button></div></div>
+    }
+    </div>
+    <div id="of-order-line-template" class="d-none"><div class="row g-2 mb-3 of-order-line" data-order-line><div class="col-md-7"><select class="form-select" name="Items[0].ProductId" required><option value="">Select product</option>@foreach(var product in products){<option value="@product.ProductId">@product.Sku · @product.Name</option>}</select></div><div class="col-md-3"><input class="form-control" type="number" min="1" name="Items[0].Quantity" value="1" required/></div><div class="col-md-2 d-grid"><button type="button" class="of-mvc-btn ghost of-remove-order-line">Remove</button></div></div></div>
+    <div class="mb-3"><label>Tax rate</label><select class="form-select" name="TaxRate"><option value="0.08" @(Model.TaxRate == 0.08m ? "selected" : "")>8%</option><option value="0.05" @(Model.TaxRate == 0.05m ? "selected" : "")>5%</option><option value="0" @(Model.TaxRate == 0 ? "selected" : "")>0%</option></select></div>
+    <div class="mb-3"><label>Shipping address</label><textarea class="form-control" name="ShippingAddress" rows="2">@Model.ShippingAddress</textarea></div><div class="mb-4"><label>Order notes</label><textarea class="form-control" name="Notes" rows="3">@Model.Notes</textarea></div><button class="of-mvc-btn" type="submit">Save order changes</button>
+}
+@section scripts { <script>
+    (function(){
+        function renumberLines(){ $('#of-order-lines [data-order-line]').each(function(index){ $(this).find('[name]').each(function(){ this.name = this.name.replace(/Items\[\d+\]/, 'Items[' + index + ']'); }); }); }
+        $('#of-add-order-line').on('click', function(){ $('#of-order-lines').append($('#of-order-line-template').html()); renumberLines(); });
+        $('#of-order-lines').on('click', '.of-remove-order-line', function(){ if($('#of-order-lines [data-order-line]').length === 1){ alert('An order must contain at least one product.'); return; } $(this).closest('[data-order-line]').remove(); renumberLines(); });
+        renumberLines();
+    })();
+</script> }

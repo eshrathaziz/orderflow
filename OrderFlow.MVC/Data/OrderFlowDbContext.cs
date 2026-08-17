@@ -5,7 +5,7 @@ namespace OrderFlow.MVC.Data
     public class OrderFlowDbContext : DbContext
     {
         public OrderFlowDbContext() : base("OrderFlowConnection") { }
-        public DbSet<Role> Roles { get; set; } public DbSet<ApplicationUser> Users { get; set; } public DbSet<Customer> Customers { get; set; } public DbSet<Category> Categories { get; set; } public DbSet<Product> Products { get; set; } public DbSet<Inventory> Inventory { get; set; } public DbSet<InventoryTransaction> InventoryTransactions { get; set; } public DbSet<Order> Orders { get; set; } public DbSet<OrderItem> OrderItems { get; set; } public DbSet<CustomerRequest> CustomerRequests { get; set; } public DbSet<RequestHistory> RequestHistory { get; set; } public DbSet<AuditEvent> AuditEvents { get; set; }
+        public DbSet<Role> Roles { get; set; } public DbSet<ApplicationUser> Users { get; set; } public DbSet<Customer> Customers { get; set; } public DbSet<Category> Categories { get; set; } public DbSet<Product> Products { get; set; } public DbSet<Inventory> Inventory { get; set; } public DbSet<InventoryTransaction> InventoryTransactions { get; set; } public DbSet<Order> Orders { get; set; } public DbSet<OrderItem> OrderItems { get; set; } public DbSet<CustomerRequest> CustomerRequests { get; set; } public DbSet<RequestHistory> RequestHistory { get; set; } public DbSet<AuditLog> AuditLogs { get; set; }
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             modelBuilder.Conventions.Remove<System.Data.Entity.ModelConfiguration.Conventions.PluralizingTableNameConvention>();
@@ -18,7 +18,7 @@ namespace OrderFlow.MVC.Data
             modelBuilder.Entity<CustomerRequest>().HasOptional(r => r.Order).WithMany(o => o.CustomerRequests).HasForeignKey(r => r.OrderId).WillCascadeOnDelete(false);
             modelBuilder.Entity<CustomerRequest>().HasOptional(r => r.AssignedEmployee).WithMany().HasForeignKey(r => r.AssignedEmployeeUserId).WillCascadeOnDelete(false);
             modelBuilder.Entity<RequestHistory>().HasOptional(h => h.Author).WithMany().HasForeignKey(h => h.AuthorUserId).WillCascadeOnDelete(false);
-            modelBuilder.Entity<AuditEvent>().HasOptional(a => a.User).WithMany().HasForeignKey(a => a.UserId).WillCascadeOnDelete(false);
+            modelBuilder.Entity<AuditLog>().HasOptional(a => a.User).WithMany().HasForeignKey(a => a.UserId).WillCascadeOnDelete(false);
             base.OnModelCreating(modelBuilder);
         }
     }

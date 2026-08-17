@@ -122,6 +122,8 @@ client/public/__manus__/version.json
 [Bb]in/
 [Oo]bj/
 packages/
+tools/nuget.exe
+*.nupkg
 App_Data/
 *.publish.xml
 *.pubxml.user

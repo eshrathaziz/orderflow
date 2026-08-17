@@ -1,140 +1,127 @@
 # OrderFlow
 
-OrderFlow is a **GitHub-ready enterprise-style Order and Inventory Management System** built around a controlled fulfilment lifecycle. It includes a complete **ASP.NET MVC 5 / .NET Framework 4.8 / Entity Framework 6 / SQL Server** reference implementation, a normalized SQL schema and seed data, responsive Razor views, and an interactive operations-dashboard demonstration for immediate exploration.
+OrderFlow is an **ASP.NET MVC 5 order and inventory management application**. The primary implementation is written in **C#**, targets **.NET Framework 4.8**, uses **Entity Framework 6** for data access, and persists business data in **Microsoft SQL Server**. Its browser experience is built with Razor views, Bootstrap, jQuery, and targeted AJAX endpoints.
 
-> **Business purpose:** keep customer, product, inventory, order, and service-request activity in one accountable operational flow.
+> The repository’s main application is `OrderFlow.MVC/`. It is a genuine MVC 5 project with controllers, models, ViewModels, services, Entity Framework context, Razor views, SQL Server schema, migrations configuration, and a Visual Studio solution. The previous TypeScript/Vite interface has been retained only as an archived prototype under `archive/`; it is not part of the primary application.
 
-## Delivered Components
+## Primary Project Structure
 
-| Location | Contents |
+```text
+OrderFlow/
+├── OrderFlow.sln
+├── OrderFlow.MVC/
+│   ├── App_Start/                 # Routing, filters, bundles
+│   ├── Controllers/               # MVC controllers
+│   ├── Data/                      # OrderFlowDbContext and seed initializer
+│   ├── Filters/                   # Role authorization filter
+│   ├── Migrations/                # Entity Framework 6 migration configuration
+│   ├── Models/                    # SQL Server entity model and enums
+│   ├── Security/                  # Forms-authentication principal and password hashing
+│   ├── Services/                  # Order, inventory, audit, dashboard business logic
+│   ├── ViewModels/                # MVC input and dashboard projections
+│   ├── Views/                     # Razor views for all modules
+│   ├── Content/ and Scripts/      # Bootstrap-oriented styles and jQuery behaviour
+│   ├── Web.config                 # SQL Server connection and MVC configuration
+│   └── OrderFlow.MVC.csproj
+├── OrderFlow.Verification/          # C# reservation-reconciliation verification harness
+├── database/OrderFlow.Database.sql # SQL Server schema, constraints, indexes, and seed data
+├── docs/                           # ER diagram, architecture diagram, interview guide, test plan
+└── archive/                        # Non-primary historical UI prototype archive
+```
+
+## Implemented Business Modules
+
+| Module | C# implementation |
 | --- | --- |
-| `OrderFlow.sln` | Visual Studio solution entry point. |
-| `OrderFlow.MVC/` | ASP.NET MVC 5 application source: models, controllers, services, Razor views, authorization, and assets. |
-| `database/OrderFlow.Database.sql` | SQL Server schema, primary/foreign keys, check constraints, indexes, and representative master-data seed. |
-| `docs/ER-Diagram.mmd` | Source for the entity relationship diagram. |
-| `docs/Architecture-Diagram.mmd` | Source for the logical architecture diagram. |
-| `docs/INTERVIEW_GUIDE.md` | Interview narrative, design reasoning, demonstration script, and common follow-ups. |
-| `docs/TEST_PLAN.md` | Validation record and targeted manual test plan. |
-| `client/` | Responsive OrderFlow client connected to the managed tRPC persistence layer. |
-| `drizzle/schema.ts` | Managed MySQL/TiDB persistent schema for the current deployed application. |
-| `drizzle/0000_sour_bastion.sql` | Generated managed-database migration, reviewed and applied to the project database. |
-| `server/db.ts` and `server/routers.ts` | Tenant-scoped persistence helpers and authenticated tRPC contracts. |
+| Authentication and authorization | Forms Authentication, PBKDF2 password hashing, custom principal, and controller/action role gates for Admin, Sales Executive, Inventory Manager, and Customer. |
+| Customers | Searchable, paginated customer directory with create, detail, edit, and controlled deactivation actions. |
+| Products | Category-backed product create/edit workflows, SKU uniqueness, pricing, product status, reorder levels, and linked inventory initialization. |
+| Inventory | Stock availability calculation, auditable adjustments, reservations, shipment stock-out, history, and low-stock reporting. |
+| Orders | Customer selection, multiple products, server-side pricing and tax calculation, stock validation, persisted created-order editing, reserved inventory reconciliation, and forward-only fulfilment workflow. |
+| Customer requests | Create and update requests with type, priority, status, assignment, resolution, and request-history entries. |
+| Dashboard | LINQ-based totals for customers, products, orders, pending/completed work, low stock, monthly revenue, recent orders, and revenue trend. |
 
-## Managed Database Persistence
-
-The current web application now has a **managed persistent MySQL/TiDB database** in addition to the legacy MVC/SQL Server reference project. After signing in, each account receives a private OrderFlow workspace keyed to the authenticated user. Its starter categories, customers, products, balances, and opening inventory movements are created only once. Subsequent orders, reservations, inventory adjustments, workflow advances, and customer requests are read from and written to the managed database.
-
-| Persistent record | Protection and behaviour |
-| --- | --- |
-| Customers, categories and products | Each record is scoped by `ownerId`, preventing one signed-in workspace from reading another workspace’s data. |
-| Inventory and inventory transactions | The current balance is stored separately from the immutable movement history; adjustments cannot reduce stock below existing reservations. |
-| Orders and items | Order items retain product, SKU and price snapshots. New saved orders reserve stock; the Shipped transition commits stock-out movements. |
-| Customer requests and history | Each request is linked to a customer and optional order, and begins with a stored customer-visible history entry. |
-
-The migration created nine OrderFlow tables (`categories`, `customers`, `products`, `inventory`, `inventoryTransactions`, `orders`, `orderItems`, `customerRequests`, and `requestHistory`) with foreign keys, unique identifiers, and lookup indexes. All workspace reads and ordinary order/request creation require an authenticated account. Inventory adjustments and order workflow advancement use an explicit administrator gate before database code can run. Use `pnpm drizzle-kit generate` after future schema edits, review the resulting migration, and apply it through the managed database migration workflow before deploying.
-
-## Core Modules
-
-| Module | Included capabilities |
-| --- | --- |
-| Customer Management | Customer registration, profiles, contacts, account status, and linked order history. |
-| Product Management | Category-backed product CRUD, SKU uniqueness, pricing, status, initial inventory, and reorder level. |
-| Inventory Management | Stock-in/out, adjustments, availability, low-stock view, transaction history, reservations, and shipping stock-out. |
-| Order Management | Multi-item orders, quantity validation, server-side totals, tax calculation, customer selection, audit events, and the controlled workflow below. |
-| Customer Requests | Request type, description, priority, status, linked order, assignment, resolution, and customer-visible communication history. |
-| Dashboard | Customer, product, order, pending/completed, low-stock, revenue, recent-order, and stock-risk signals. |
-
-## Order Lifecycle
+## Order Workflow
 
 ```text
 Created → Confirmed → Processing → Shipped → Delivered → Completed
 ```
 
-The progression is deliberately forward-only. `OrderService.IsValidTransition` protects the business rule on the server rather than trusting a client-side status control. New orders reserve available inventory. The **Shipped** transition consumes that reservation and writes a `StockOut` transaction, which preserves a clear distinction between promised stock and physically dispatched stock.
+`OrderService` validates every transition in C#. Order creation persists the order and items, computes totals, and reserves available inventory. The MVC edit workflow permits updates while an order remains in **Created** status; it recalculates monetary totals, reconciles reservations, records inventory movements, and writes an audit log. The **Shipped** transition commits the associated stock-out movement.
 
-## Roles and Access
+## SQL Server and Entity Framework 6
 
-| Role | Primary access |
+The database model is represented in `OrderFlow.MVC/Models/Entities.cs` and exposed through `OrderFlowDbContext`. The context has `DbSet` properties and configured relationships for the following persisted SQL Server tables:
+
+| Table | Purpose |
 | --- | --- |
-| Admin | Full administration; customer, product, inventory, order, and request access. |
-| Sales Executive | Customer CRUD, order workflow, and customer request handling. |
-| Inventory Manager | Product management, inventory operations, inventory history, permitted order status actions, and request handling. |
-| Customer | Restricted portal access to their own service requests and linked order context. |
+| `Users`, `Roles` | Application identity and role assignment. |
+| `Customers`, `Categories`, `Products` | Customer and product master data. |
+| `Inventory`, `InventoryTransactions` | Current balances and movement history. |
+| `Orders`, `OrderItems` | Sales orders, monetary totals, and product lines. |
+| `CustomerRequests`, `RequestHistory` | Customer service work and communication history. |
+| `AuditLogs` | User-attributed application audit trail. |
 
-Authorization is enforced by a custom `AuthorizeRoleAttribute` applied to controllers/actions. Authentication uses Forms Authentication and a custom principal; passwords are PBKDF2-SHA256 hashes with unique salts. The implementation uses ASP.NET MVC 5 patterns for model binding, validation, routing, Razor views, LINQ, Entity Framework, and anti-forgery protection. The relevant framework APIs are documented by Microsoft for [MVC authorization][1], [EF6 Code First][2], and [Forms Authentication][3].
+`database/OrderFlow.Database.sql` is the DBA-friendly SQL Server deployment script. It creates primary keys, foreign keys, check constraints, unique business identifiers, query indexes, and representative master data. `OrderFlow.MVC/Migrations/Configuration.cs` provides the EF6 migrations entry point for teams using Package Manager Console migration commands.
 
-## Architecture
-
-The presentation layer contains responsive Razor views enhanced with Bootstrap and jQuery. Controllers orchestrate model binding and authorization, while services own business rules. Entity Framework 6 translates LINQ projections and updates into SQL Server operations. The schema holds current inventory in `Inventory` and immutable operational movements in `InventoryTransactions`.
-
-```mermaid
-flowchart LR
-    Browser[Bootstrap + jQuery UI] --> MVC[ASP.NET MVC 5 Controllers]
-    MVC --> Security[Forms Authentication + Role Authorization]
-    MVC --> Services[Order, Inventory, Dashboard and Audit Services]
-    Services --> EF[Entity Framework 6 + LINQ]
-    EF --> SQL[(SQL Server)]
-```
-
-For the detailed diagrams, see [ER-Diagram.mmd](docs/ER-Diagram.mmd) and [Architecture-Diagram.mmd](docs/Architecture-Diagram.mmd).
-
-## Local Setup — Visual Studio / Windows
+## Run Locally on Windows
 
 ### Prerequisites
 
-Install **Visual Studio 2022** with the **ASP.NET and web development** workload, .NET Framework 4.8 targeting pack, SQL Server Express/LocalDB or SQL Server Developer Edition, and NuGet package restore enabled. ASP.NET MVC 5 targets the classic .NET Framework application model, so it should be opened and executed on Windows/IIS Express rather than the Linux-based browser demonstration environment.
+Install **Visual Studio 2022** with the **ASP.NET and web development** workload, the **.NET Framework 4.8 targeting pack**, SQL Server Express/LocalDB or SQL Server Developer Edition, and NuGet package restore.
 
-### Configure and run
+### Database setup
 
-1. Clone the repository and open `OrderFlow.sln` in Visual Studio.
-2. Restore packages using **Restore NuGet Packages**. The project pins MVC 5.2.9, Entity Framework 6.4.4, jQuery 3.7.1, and Bootstrap 5.3.3 in `OrderFlow.MVC/packages.config`.
-3. Select **OrderFlow.MVC** as the startup project.
-4. Choose one database initialization route:
-   - For application-owned development data, retain the LocalDB connection in `OrderFlow.MVC/Web.config`; the EF6 `SeedData` initializer creates roles, accounts, categories, products, and inventory on first use.
-   - For DBA-controlled schema deployment, run `database/OrderFlow.Database.sql` in SQL Server Management Studio and then update `OrderFlowConnection` in `Web.config`. Do not run the EF initializer against that already-provisioned database.
-5. Run with IIS Express (`F5`), then sign in using a development account below.
+Choose one supported database initialization route:
 
-| Account | Role | Password |
+1. **Code First development setup.** Keep the `OrderFlowConnection` LocalDB connection in `OrderFlow.MVC/Web.config`. The EF6 initializer seeds roles, users, categories, products, and inventory for local development.
+2. **SQL Server script setup.** Execute `database/OrderFlow.Database.sql` in SQL Server Management Studio, then replace the `OrderFlowConnection` value in `Web.config` with your SQL Server connection string. Do not run the Code First seed initializer against a database already provisioned by the script.
+
+### Build and run
+
+1. Open `OrderFlow.sln` in Visual Studio.
+2. Restore NuGet packages.
+3. Set **OrderFlow.MVC** as the startup project.
+4. Build the solution and start IIS Express with `F5`.
+5. Sign in with the local development accounts seeded by `Data/SeedData.cs`.
+
+| Account | Role | Development password |
 | --- | --- | --- |
 | `admin@orderflow.local` | Admin | `ChangeMe!123` |
 | `sales@orderflow.local` | Sales Executive | `ChangeMe!123` |
 | `inventory@orderflow.local` | Inventory Manager | `ChangeMe!123` |
 | `ava@northstar.example` | Customer | `ChangeMe!123` |
 
-**Security note:** the sample accounts and non-HTTPS LocalDB development configuration are strictly for local demonstration. Set `requireSSL="true"`, use an HTTPS binding, rotate all sample passwords, and move secret-bearing settings out of source control before any deployment.
+Change the demonstration credentials, use an HTTPS binding, and provide a production SQL Server connection string before deploying outside a local development environment.
 
-## Interactive Application
+## Development Build Verification
 
-The managed preview provides the responsive Operations Ledger interface with a sign-in-backed persistent workspace. After sign-in, it loads database records through tRPC, saves new order reservations, persists inventory adjustments and workflow transitions, and stores customer requests. The legacy ASP.NET MVC implementation remains in `OrderFlow.MVC/` as the requested .NET Framework reference implementation.
+The MVC project is built with the solution file:
 
-The dashboard was visually reviewed at desktop size and refined to use a persistent ink-blue navigation rail, structured ledger density, a distinct flow-channel brand mark, semantic workflow colors, and a dispatch-monitor treatment for warehouse imagery. The architecture diagram and the documented screenshot validation path are included in this repository; use the application preview for the current visual capture.
+```bash
+mono tools/nuget.exe restore OrderFlow.sln -PackagesDirectory packages -NonInteractive
+xbuild OrderFlow.sln /p:Configuration=Debug
+mono OrderFlow.Verification/bin/Debug/OrderFlow.Verification.exe
+```
 
-## Database Notes
-
-The legacy SQL Server schema remains in `database/OrderFlow.Database.sql`. The deployed managed application uses the Drizzle schema described above. Both designs use normalized order, item, inventory, and request-history structures; do not attempt to point the managed web runtime directly at the legacy LocalDB configuration.
+The project compiles to `OrderFlow.MVC/bin/OrderFlow.MVC.dll`. `OrderFlow.Verification` validates the order-edit reservation reconciliation rules for increasing, reducing, and rejecting invalid stock allocations. Windows Visual Studio/IIS Express remains the supported hosting environment for the classic .NET Framework MVC runtime.
 
 ## AJAX Endpoints
 
-| Endpoint | Purpose |
+| Endpoint | Behaviour |
 | --- | --- |
-| `GET /Orders/ProductSearch?query=` | Product/SKU type-ahead for order entry. |
-| `GET /Orders/CheckAvailability?productId=&quantity=` | Availability validation before order submission. |
-| `POST /Orders/Calculate` | Server-side order subtotal/tax/total estimate. |
-| `POST /Orders/UpdateStatus` | Controlled workflow status update. |
-| `GET /Inventory/Availability?productId=` | Current inventory availability. |
-| `POST /Inventory/Adjust` | Auditable stock adjustment. |
-| `POST /CustomerRequests/Update` | Assignment, status, resolution, and communication-history update. |
+| `GET /Orders/ProductSearch?query=` | Finds active products by SKU or name. |
+| `GET /Orders/CheckAvailability?productId=&quantity=` | Returns current available quantity and reorder level. |
+| `POST /Orders/Calculate` | Calculates server-side subtotal, tax, and total for order lines. |
+| `POST /Orders/UpdateStatus` | Applies only a permitted next workflow status. |
+| `GET /Inventory/Availability?productId=` | Returns product availability. |
+| `POST /Inventory/Adjust` | Persists an inventory adjustment and movement record. |
+| `POST /CustomerRequests/Update` | Persists request status, assignment, resolution, and communication history. |
 
-## Interview and Test Resources
+## Documentation
 
-Read [docs/INTERVIEW_GUIDE.md](docs/INTERVIEW_GUIDE.md) for the concise technical story and demonstration script. Read [docs/TEST_PLAN.md](docs/TEST_PLAN.md) before final validation; it clearly separates completed browser/type checks from Windows-hosted MVC/SQL tests still to execute.
+The repository contains an [ER diagram](docs/ER-Diagram.mmd), an [architecture diagram](docs/Architecture-Diagram.mmd), an [interview guide](docs/INTERVIEW_GUIDE.md), and a [test plan](docs/TEST_PLAN.md).
 
-## Repository Hygiene
+## Prototype Archive
 
-The `.gitignore` excludes Visual Studio user files, build output, `packages/`, logs, and local environment artifacts. Commit generated EF migrations only when a team has agreed on migration ownership and deployment sequencing.
-
-## References
-
-[1]: https://learn.microsoft.com/en-us/dotnet/api/system.web.mvc.authorizeattribute "Microsoft Learn — AuthorizeAttribute"
-[2]: https://learn.microsoft.com/en-us/ef/ef6/modeling/code-first/workflows/new-database "Microsoft Learn — EF6 Code First: New Database"
-[3]: https://learn.microsoft.com/en-us/dotnet/api/system.web.security.formsauthentication "Microsoft Learn — FormsAuthentication"
+`archive/orderflow-operations-ledger-prototype.zip` preserves the former TypeScript/Vite interface prototype for historical reference only. It is not loaded, built, or used by the ASP.NET MVC 5 solution. This separation keeps the repository’s primary source implementation accurately represented by C#, Razor, Entity Framework 6, and SQL Server assets.
